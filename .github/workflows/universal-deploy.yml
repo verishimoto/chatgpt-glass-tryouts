@@ -1,0 +1,91 @@
+.name: Universal Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (if needed)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies (optional)
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          else
+            echo "No package.json, skipping install"
+          fi
+
+      - name: Build project (optional)
+        run: |
+          if [ -f package.json ] && grep -q "build" package.json; then
+            npm run build
+          else
+            echo "No build script, skipping build"
+          fi
+
+      - name: Extract ZIPs (optional)
+        run: |
+          mkdir -p extracted
+          shopt -s nullglob
+          for zip in *.zip */*.zip; do
+            unzip -o "$zip" -d extracted
+          done
+
+      - name: Prepare deployment folder
+        run: |
+          mkdir -p flat
+          # Copy build/dist output if exists
+          if [ -d build ]; then
+            cp -r build/* flat/
+          elif [ -d dist ]; then
+            cp -r dist/* flat/
+          else
+            # fallback: copy all repo files + extracted ZIPs
+            find . -type f -not -path "./.git/*" -not -path "./flat/*" -exec cp {} flat/ \;
+            find extracted -type f -exec cp {} flat/ \; || true
+          fi
+
+      - name: Verify index.html exists
+        run: |
+          if [ ! -f flat/index.html ]; then
+            echo "❌ index.html missing! Deployment aborted."
+            exit 1
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          path: flat
+
+      - name: Verify site
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          URL="https://verishimoto.github.io/$REPO_NAME/"
+          if curl --fail --silent --head $URL | grep "200 OK"; then
+            echo "✅ Site is live: $URL"
+          else
+            echo "⚠️ Site might not be live yet or deployment failed"
+          fi
+
+      - name: Log deployment
+        run: |
+          echo "$(date) - commit $GITHUB_SHA - files: $(ls flat | wc -l)" >> deployment-backlog.txt
+          git add deployment-backlog.txt
+          git commit -m "Update deployment log" || echo "Nothing to commit"
+          git push || echo "Push skipped"
