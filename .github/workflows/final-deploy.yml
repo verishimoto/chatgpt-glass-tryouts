@@ -1,0 +1,63 @@
+name: Build & Deploy ChatGPT Glass Tryouts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install || echo "No package.json, skipping install"
+
+      - name: Build project
+        run: |
+          if [ -f package.json ]; then
+            npm run build || echo "No build script, skipping build"
+          fi
+
+      - name: Prepare deployment folder
+        run: |
+          mkdir -p flat
+          # Copy build output (dist or build folder)
+          if [ -d build ]; then
+            cp -r build/* flat/
+          elif [ -d dist ]; then
+            cp -r dist/* flat/
+          else
+            # fallback: copy all repo files
+            find . -type f -not -path "./.git/*" -not -path "./flat/*" -exec cp {} flat/ \;
+          fi
+
+      - name: Verify index.html exists
+        run: |
+          if [ ! -f flat/index.html ]; then
+            echo "❌ index.html missing! Deployment aborted."
+            exit 1
+          fi
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          path: flat
+
+      - name: Verify site
+        run: |
+          URL="https://verishimoto.github.io/chatgpt-glass-tryouts/"
+          if curl --fail --silent --head $URL | grep "
