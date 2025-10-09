@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="opalFire" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffb67f"/>
+      <stop offset="35%" stop-color="#ff8a66"/>
+      <stop offset="70%" stop-color="#ff6f91"/>
+      <stop offset="100%" stop-color="#ffb6c1"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#opalFire)" opacity="0.95"/>
+  <text x="47%" y="108%" text-anchor="middle" dominant-baseline="bottom"
+        font-size="140" font-family="Poppins, Inter, Arial" fill="#111" font-weight="800" style="letter-spacing:-6px;">
+    AI
+  </text>
+</svg>

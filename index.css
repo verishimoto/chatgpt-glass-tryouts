@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --opal-deep:#0a0f2e;
+  --opal-electric:#1e3a8a;
+  --opal-teal:#00a693;
+  --opal-cyan:#22d3ee;
+  --opal-fire-1:#ffb67f;
+  --opal-fire-2:#ff8a66;
+  --opal-fire-3:#ff6f91;
+  --primary: #63A1F2;
+}
+
+/* apply a dark opal background */
+html,body,#root{height:100%;}
+body{
+  background: linear-gradient(135deg,var(--opal-deep),var(--opal-electric));
+  color: #eaf2ff;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* glass card */
+.glass{
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.06);
+  backdrop-filter: blur(14px) saturate(120%);
+  border-radius: 14px;
+}
+
+/* iridescent accent */
+.iris {
+  background: linear-gradient(90deg,var(--opal-fire-1),var(--opal-fire-2),var(--opal-fire-3));
+}
