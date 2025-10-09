@@ -1,0 +1,77 @@
+name: Auto Deploy with Troubleshooting
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract any ZIP files
+        run: |
+          echo "🔍 Searching for ZIP files..."
+          shopt -s nullglob
+          mkdir -p extracted
+          for zip in *.zip */*.zip; do
+            echo "📦 Unzipping: $zip"
+            unzip -o "$zip" -d extracted
+          done
+          echo "✅ All ZIPs extracted to /extracted (if any)"
+
+      - name: Flatten all files
+        run: |
+          mkdir -p flat
+          find . -type f -not -path "./.git/*" -not -path "./flat/*" -exec cp {} flat/ \;
+          find extracted -type f -exec cp {} flat/ \; || true
+          echo "✅ All files flattened into /flat"
+
+      - name: Check essential files
+        run: |
+          if [ ! -f flat/index.html ]; then
+            echo "❌ index.html missing! Deployment aborted."
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: flat
+
+      - name: Log deployment
+        run: |
+          echo "$(date) - commit $GITHUB_SHA - files: $(ls flat | wc -l)" >> deployment-backlog.txt
+          git add deployment-backlog.txt
+          git commit -m "Update deployment log" || echo "Nothing to commit"
+          git push || echo "Push skipped"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Verify site is live
+        run: |
+          URL="https://verishimoto.github.io/opal-ai-dashboard/"
+          if curl --fail --silent --head $URL | grep "200 OK"; then
+            echo "✅ Site is live: $URL"
+          else
+            echo "⚠️ Site might not be live yet or deployment failed"
+          fi
