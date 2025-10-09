@@ -1,0 +1,61 @@
+name: Build & Deploy ChatGPT Glass Tryouts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Prepare deployment folder
+        run: |
+          mkdir flat
+          # Copy build output
+          cp -r dist/* flat/
+          echo "✅ Build copied to flat/"
+
+      - name: Create backlog log
+        run: |
+          echo "Deployed on $(date)" >> deployment-backlog.txt
+          git add deployment-backlog.txt
+          git commit -m "Update deployment backlog" || echo "Nothing to commit"
+          git push || echo "Push skipped"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: flat
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
